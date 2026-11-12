@@ -1,0 +1,434 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROOFLENS 2.0</title>
+
+<style>
+body {
+  background: #101118;
+  color: white;
+  font-family: Arial, sans-serif;
+  max-width: 760px;
+  margin: 40px auto;
+  padding: 20px;
+}
+h1 { color: #a3ff65; }
+section {
+  background: #20222c;
+  padding: 24px;
+  border-radius: 14px;
+  margin-top: 20px;
+}
+input, textarea {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 8px;
+}
+button {
+  background: #a3ff65;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+label { display: block; margin-top: 16px; }
+input[type="range"] { accent-color: #a3ff65; }
+small { color: #bbbbbb; }
+</style>
+</head>
+
+<body>
+
+<h1>PROOFLENS 2.0</h1>
+<p>Prove Your Potential.</p>
+<small>GAMBIT 2026 | DEMO PROJECT</small>
+
+<section>
+<h2>1. Student Submission</h2>
+<p>Добавь свой проект для оценки.</p>
+
+<input id="project" placeholder="Название проекта">
+<textarea id="problem" placeholder="Какую проблему решает проект?"></textarea>
+<textarea id="solution" placeholder="Опиши своё решение"></textarea>
+<textarea id="evidence" placeholder="Какие есть доказательства и результаты?"></textarea>
+
+<button onclick="submitProject()">Отправить проект</button>
+<p id="saved"></p>
+</section>
+
+<section>
+<h2>2. Project Readiness</h2>
+<p id="readiness">Сначала добавь проект.</p>
+</section>
+
+<section>
+<h2>3. Expert Evaluation</h2>
+
+<label>Актуальность проблемы — 20%</label>
+<input id="s1" type="range" min="0" max="10" value="5">
+
+<label>Инновационность — 25%</label>
+<input id="s2" type="range" min="0" max="10" value="5">
+
+<label>Реализуемость — 25%</label>
+<input id="s3" type="range" min="0" max="10" value="5">
+
+<label>Доказательства и результаты — 30%</label>
+<input id="s4" type="range" min="0" max="10" value="5">
+
+<button onclick="calculate()">Рассчитать оценку</button>
+<h2 id="score">Результат: —</h2> 
+<div id="report"></div>
+<h3>Expert Comments</h3>
+<p>Объясните выставленные оценки и укажите,
+какие доказательства вы учитывали.</p>
+
+<textarea
+  id="expertComment"
+  placeholder="Например: проект актуальный, но требуется больше доказательств эффективности решения."
+  rows="4"
+></textarea>
+<small>Оценки выставляет эксперт, не искусственный интеллект.</small>
+</section>
+
+<script>
+let submitted = false;
+
+
+function submitProject() {
+  const fields = [
+    { id: "project", name: "Название проекта" },
+    { id: "problem", name: "Описание проблемы" },
+    { id: "solution", name: "Описание решения" },
+    { id: "evidence", name: "Доказательства и результаты" }
+  ];
+
+  const missing = fields.filter(field =>
+    !document.getElementById(field.id).value.trim()
+  );
+
+  const filled = fields.length - missing.length;
+  submitted = missing.length === 0;
+
+  document.getElementById("saved").textContent =
+    submitted
+      ? "Заявка подготовлена к экспертной оценке."
+      : "Заполни недостающие разделы.";
+
+  document.getElementById("readiness").textContent =
+    missing.length === 0
+      ? "Готово 4 из 4 разделов. Теперь эксперт должен проверить доказательства и оценить проект."
+      : "Заполнено " + filled + " из 4. Не хватает: " +
+        missing.map(field => field.name).join(", ");
+}
+
+
+function calculate() {
+  if (!submitted) {
+    document.getElementById("score").textContent =
+      "Сначала отправь проект.";
+    return;
+  }
+
+  const weights = [20, 25, 25, 30];
+  const scores = [1, 2, 3, 4].map(
+    i => Number(document.getElementById("s" + i).value)
+  );
+
+  const total = scores.reduce(
+    (sum, score, i) => sum + score * weights[i] / 10, 0
+  );
+
+  document.getElementById("score").textContent =
+    "Итоговая экспертная оценка: " + total.toFixed(1) + "/100";
+
+
+  const names = [
+    "Актуальность проблемы",
+    "Инновационность",
+    "Реализуемость",
+    "Доказательства и результаты"
+  ];
+
+  const report = names.map((name, i) => {
+    const points = scores[i] * weights[i] / 10;
+
+    return `<p>${name}: ${scores[i]}/10 
+    — вклад ${points.toFixed(1)} баллов</p>`;
+  }).join("");
+
+  document.getElementById("report").innerHTML =
+    "<h3>Evaluation Breakdown</h3>" + report;
+}
+</script>
+
+<script>
+const STORAGE_KEY = "prooflens_projects";
+
+const criteriaNames = [
+  "Актуальность",
+  "Инновационность",
+  "Реализуемость",
+  "Доказательства"
+];
+
+const criteriaWeights = [20, 25, 25, 30];
+
+// Создаём два новых раздела сайта
+document.body.insertAdjacentHTML("beforeend", `
+<section>
+  <h2>4. Saved Projects</h2>
+  <p>Сохрани проект вместе с экспертными оценками.</p>
+
+  <button onclick="saveNewProject()">
+    Сохранить проект
+  </button>
+
+  <p id="saveStatus"></p>
+  <div id="savedProjects"></div>
+</section>
+
+<section>
+  <h2>5. Project Comparison</h2>
+  <p>Выбери два проекта для сравнения.</p>
+
+  <select id="compareOne"></select>
+  <select id="compareTwo"></select>
+
+  <button onclick="compareProjects()">
+    Сравнить проекты
+  </button>
+  <button onclick="deleteSelectedProject()"
+  style="background:#ff6b6b; color:white;">
+  Удалить выбранный проект
+</button>
+
+  <pre id="compareResult"
+    style="white-space:pre-wrap;line-height:1.8">
+  </pre>
+
+  <small>
+    Оценки выставляет эксперт.
+    Система рассчитывает результаты.
+  </small>
+</section>
+`);
+
+// Загружаем сохранённые проекты
+function loadProjects() {
+  try {
+    const data = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) || "[]"
+    );
+
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+// Сохраняем проект
+function saveNewProject() {
+  const getValue = id =>
+    document.getElementById(id).value.trim();
+
+  const title = getValue("project");
+  const problem = getValue("problem");
+  const solution = getValue("solution");
+  const evidence = getValue("evidence");
+  const comment = document
+  .getElementById("expertComment")
+  .value.trim();
+
+if (!comment) {
+  alert("Пожалуйста, объясните экспертную оценку.");
+  return;
+}
+
+  if (!title || !problem || !solution || !evidence) {
+    alert("Сначала заполни все четыре поля проекта.");
+    return;
+  }
+
+  const scores = [1, 2, 3, 4].map(i =>
+    Number(document.getElementById("s" + i).value)
+  );
+
+  const total = scores.reduce(
+    (sum, score, i) =>
+      sum + score * criteriaWeights[i] / 10,
+    0
+  );
+
+  const project = {
+    id: Date.now().toString() +
+        Math.random().toString(36).slice(2),
+    title,
+    problem,
+    solution,
+    evidence,
+    scores,
+total,
+comment
+  };
+
+  const projects = loadProjects();
+  projects.push(project);
+
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(projects)
+    );
+
+    document.getElementById("saveStatus").textContent =
+      "Проект сохранён!";
+
+    renderProjects();
+  } catch (error) {
+    document.getElementById("saveStatus").textContent =
+      "Не удалось сохранить данные в браузере.";
+  }
+}
+
+// Показываем сохранённые проекты
+function renderProjects() {
+  const projects = loadProjects();
+
+  const list = document.getElementById("savedProjects");
+  const first = document.getElementById("compareOne");
+  const second = document.getElementById("compareTwo");
+
+  list.replaceChildren();
+  first.replaceChildren();
+  second.replaceChildren();
+
+  if (projects.length === 0) {
+    list.textContent = "Пока нет сохранённых проектов.";
+    return;
+  }
+
+  projects.forEach(project => {
+    const item = document.createElement("p");
+
+    item.textContent =
+      project.title + " — " +
+      project.total.toFixed(1) + "/100";
+
+    list.appendChild(item);
+
+    first.add(new Option(project.title, project.id));
+    second.add(new Option(project.title, project.id));
+  });
+
+  if (projects.length > 1) {
+    second.selectedIndex = 1;
+  }
+}
+
+// Сравниваем два проекта
+function compareProjects() {
+  const projects = loadProjects();
+
+  const firstId =
+    document.getElementById("compareOne").value;
+  const secondId =
+    document.getElementById("compareTwo").value;
+
+  const result =
+    document.getElementById("compareResult");
+
+  if (firstId === secondId || projects.length < 2) {
+    result.textContent =
+      "Выбери два разных сохранённых проекта.";
+    return;
+  }
+
+  const a = projects.find(p => p.id === firstId);
+  const b = projects.find(p => p.id === secondId);
+
+  if (!a || !b) {
+    result.textContent = "Проекты не найдены.";
+    return;
+  }
+
+  const lines = [
+    a.title + ": " + a.total.toFixed(1) + "/100",
+    b.title + ": " + b.total.toFixed(1) + "/100",
+    "",
+    "РАЗБОР ПО КРИТЕРИЯМ"
+  ];
+
+  criteriaNames.forEach((name, i) => {
+    lines.push(
+      name + ": " +
+      a.scores[i] + "/10 vs " +
+      b.scores[i] + "/10"
+    );
+  });
+
+  lines.push(
+    "",
+    "Разница итоговых оценок: " +
+    Math.abs(a.total - b.total).toFixed(1) +
+    " балла"
+  );
+
+lines.push(
+  "",
+  "КОММЕНТАРИИ ЭКСПЕРТА",
+  "",
+  a.title + ": " +
+    (a.comment || "Комментарий не указан"),
+  "",
+  b.title + ": " +
+    (b.comment || "Комментарий не указан")
+);
+  result.textContent = lines.join("\n");
+}
+
+renderProjects();
+</script>
+
+function deleteSelectedProject() {
+  const selectedId =
+    document.getElementById("compareOne").value;
+
+  const projects = loadProjects();
+  const selected = projects.find(
+    p => p.id === selectedId
+  );
+
+  if (!selected) return;
+
+  if (!confirm("Удалить проект: " + selected.title + "?")) {
+    return;
+  }
+
+  const updated = projects.filter(
+    p => p.id !== selectedId
+  );
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(updated)
+  );
+
+  renderProjects();
+
+  document.getElementById("compareResult").textContent = "";
+
+  document.getElementById("saveStatus").textContent =
+    "Проект удалён: " + selected.title;
+}
+renderProjects();
+</script>
+</body>
+</html>
